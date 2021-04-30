@@ -103,7 +103,8 @@ seal "awskms" {
 }
 
 telemetry {
-  dogstatsd_addr = "localhost:8125"
+  prometheus_retention_time = "30s"
+  disable_hostname = true
   unauthenticated_metrics_access  = "true"
 }
 api_addr = "http://${vault_dns}"
