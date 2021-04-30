@@ -104,6 +104,7 @@ seal "awskms" {
 
 telemetry {
   dogstatsd_addr = "localhost:8125"
+  unauthenticated_metrics_access  = "true"
 }
 api_addr = "http://${vault_dns}"
 cluster_addr = "http://$${PRIVATE_IP}:8201"
