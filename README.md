@@ -9,6 +9,6 @@ This repo contains a demo app ["Pet Clinic"](https://github.com/spring-projects/
 
 ## Deployment
 Steps:
-`terraform init`
-`terraform plan`
-`terraform apply`
+- `terraform init`
+- `terraform plan`
+- `terraform apply`
