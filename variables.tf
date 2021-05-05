@@ -21,7 +21,7 @@ variable "az_count" {
 
 variable "keyPairName" {
   description = "Name of the pem key to use for SSH"
-  default     = "test_key"
+  default     = "daniel-callao-useast1"
 }
 
 variable "client_instance_type" {
@@ -38,7 +38,6 @@ variable "private_mode" {
 variable "allowed_traffic_cidr_blocks" {
   description = "List of CIDR blocks allowed to send requests to your vault endpoint.  Defaults to EVERYWHERE.  You should probably limit this to your organization IP or VPC CIDR."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
 }
 
 variable "vault_instance_count" {

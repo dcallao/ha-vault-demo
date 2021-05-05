@@ -10,7 +10,7 @@ resource "aws_security_group" "vault-client_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_traffic_cidr_blocks
   }
 
   # Vault API traffic
@@ -18,7 +18,7 @@ resource "aws_security_group" "vault-client_sg" {
     from_port   = 8200
     to_port     = 8200
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Admin URL
@@ -26,7 +26,7 @@ resource "aws_security_group" "vault-client_sg" {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_traffic_cidr_blocks
   }
 
   # Internal Traffic
@@ -62,7 +62,7 @@ resource "aws_security_group" "vault-server_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_traffic_cidr_blocks
   }
 
   # Vault API traffic
@@ -70,7 +70,7 @@ resource "aws_security_group" "vault-server_sg" {
     from_port   = 8200
     to_port     = 8200
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [var.vpc_cidr]
   }
 
   # Internal Traffic

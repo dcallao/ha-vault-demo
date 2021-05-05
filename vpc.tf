@@ -14,6 +14,7 @@ data "aws_caller_identity" "current" {}
 # ---------------------------------------------------------------------------------------------------------------------
 provider "aws" {
   region                      = var.aws_region
+  profile                     = "demo"
   skip_credentials_validation = true
   skip_requesting_account_id  = true
   skip_get_ec2_platforms      = true
@@ -248,13 +249,14 @@ resource "aws_lb_target_group" "alb_targets" {
 
   health_check {
     enabled             = true
-    interval            = 10
-    path                = "/v1/sys/health?activecode=200&standbycode=200&sealedcode=200&uninitcode=200"
-    protocol            = "HTTP"
-    timeout             = 5
     healthy_threshold   = 2
-    unhealthy_threshold = 2
+    interval            = 5
     matcher             = "200-499"
+    path                = "/v1/sys/health?activecode=200&standbycode=200&sealedcode=200&uninitcode=200"
+    port                = "traffic-port"
+    protocol            = "HTTP"
+    timeout             = 2
+    unhealthy_threshold = 2
   }
 
   tags = merge(

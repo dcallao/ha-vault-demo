@@ -17,6 +17,9 @@ apt-get install -qq -y \
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 
+# Install Datadog agent
+DD_AGENT_MAJOR_VERSION=7 DD_API_KEY=${datadog_api} DD_SITE="datadoghq.com" bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script.sh)"
+
 #### Set up Vault Client ####
 export DEBIAN_FRONTEND=noninteractive
 sudo echo "127.0.0.1 $(hostname)" >> /etc/hosts
@@ -49,8 +52,8 @@ user_ubuntu() {
 
 user_ubuntu
 
-VAULT_ZIP="vault_1.5.0_linux_amd64.zip"
-VAULT_URL="https://releases.hashicorp.com/vault/1.5.0/vault_1.5.0_linux_amd64.zip"
+VAULT_ZIP="vault_1.7.0_linux_amd64.zip"
+VAULT_URL="https://releases.hashicorp.com/vault/1.7.0/vault_1.7.0_linux_amd64.zip"
 sudo curl --silent --output /tmp/$${VAULT_ZIP} $${VAULT_URL}
 sudo unzip -o /tmp/$${VAULT_ZIP} -d /usr/local/bin/
 sudo chmod 0755 /usr/local/bin/vault
@@ -167,8 +170,8 @@ EOF
 
 #### Set up Vault environment ####
 sudo tee -a /etc/environment <<EOF
-export VAULT_API_ADDR="http://${vault_server_addr}"
-export VAULT_ADDR="http://${vault_server_addr}"
+export VAULT_API_ADDR="http://${vault_server_addr}:8200"
+export VAULT_ADDR="http://${vault_server_addr}:8200"
 export VAULT_SKIP_VERIFY=true
 EOF
 
@@ -197,7 +200,7 @@ auto_auth {
 }
 
 vault {
-   address = "http://${vault_server_addr}"
+   address = "http://${vault_server_addr}:8200"
 }
 
 template {
@@ -224,6 +227,7 @@ vault login -method=aws role=client-role-iam
 
 # Start the Vault agent in /home/ubuntu
 vault agent -config=/home/ubuntu/vault-agent.hcl -log-level=debug 2>&1 | logger &
+chmod 775 /var/log/syslog
 
 # Start the Web Server in /opt/spring-petclinic
 cd /opt/spring-petclinic

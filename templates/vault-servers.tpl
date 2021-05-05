@@ -24,10 +24,6 @@ COMMENT="Hashicorp vault user"
 GROUP="vault"
 HOME="/srv/vault"
 
-# Get Instance Metadata
-PRIVATE_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-
 user_ubuntu() {
   # UBUNTU user setup
   if ! getent group $${GROUP} >/dev/null
@@ -51,8 +47,8 @@ user_ubuntu() {
 
 user_ubuntu
 
-VAULT_ZIP="vault_1.5.0_linux_amd64.zip"
-VAULT_URL="https://releases.hashicorp.com/vault/1.5.0/vault_1.5.0_linux_amd64.zip"
+VAULT_ZIP="vault_1.7.0_linux_amd64.zip"
+VAULT_URL="https://releases.hashicorp.com/vault/1.7.0/vault_1.7.0_linux_amd64.zip"
 sudo curl --silent --output /tmp/$${VAULT_ZIP} $${VAULT_URL}
 sudo unzip -o /tmp/$${VAULT_ZIP} -d /usr/local/bin/
 sudo chmod 0755 /usr/local/bin/vault
@@ -87,14 +83,12 @@ storage "dynamodb" {
 }
 
 listener "tcp" {
-  address = "127.0.0.1:8199"
-  tls_disable = "true"
-}
-
-listener "tcp" {
-  address = "$${PRIVATE_IP}:8200"
-  cluster_address = "$${PRIVATE_IP}:8201"
+  address = "[::]:8200"
+  cluster_address = "[::]:8201"
   tls_disable = "1"
+  telemetry {
+    unauthenticated_metrics_access = true
+  }
 }
 
 seal "awskms" {
@@ -103,12 +97,11 @@ seal "awskms" {
 }
 
 telemetry {
-  prometheus_retention_time = "30s"
+  prometheus_retention_time = "24h"
   disable_hostname = true
-  unauthenticated_metrics_access  = "true"
 }
-api_addr = "http://${vault_dns}"
-cluster_addr = "http://$${PRIVATE_IP}:8201"
+api_addr = "http://127.0.0.1:8200"
+cluster_addr = "http://127.0.0.1:8201"
 ui=true
 disable_mlock = true
 EOF
@@ -146,7 +139,7 @@ cloud_watch_logs
 
 #### Set up Vault environment ####
 sudo tee -a /etc/environment <<EOF
-export VAULT_ADDR="http://127.0.0.1:8199"
+export VAULT_ADDR="http://127.0.0.1:8200"
 export VAULT_SKIP_VERIFY=true
 EOF
 
@@ -159,16 +152,20 @@ sudo systemctl restart vault
 ###########################################
 
 #### Initialize Vault - Token in Clear txt ####
-export VAULT_ADDR="http://127.0.0.1:8199"
+export VAULT_ADDR="http://127.0.0.1:8200"
 
-until curl -fs -o /dev/null localhost:8199/v1/sys/init; do
-  echo "Waiting for Vault to start..."
-  sleep 1
-done
+waitforurl() {
+    timeout -s TERM 45 bash -c \
+    'while [[ "$(curl -s -o /dev/null -L -w ''%%{http_code}'' ${0})" != "200" ]]; do sleep 2; done'
+}
 
-init=$(vault operator init -status)
+echo "waiting vault boot"
+waitforurl http://127.0.0.1:8200/v1/sys/seal-status
+echo "vault is available"
 
-if [ "$init" != "Vault is initialized" ]; then
+STATUS=$(vault status -format=json)
+
+if [ "$(echo $STATUS | jq .initialized)" == "false" ]; then
   echo "Initializing Vault"
   install -d -m 0755 -o vault -g vault /etc/vault
   SECRET_VALUE=$(vault operator init -recovery-shares=1 -recovery-threshold=1 | tee /etc/vault/vault-init.txt)
@@ -196,6 +193,7 @@ else
 fi
 
 vault audit enable syslog
+chmod 775 /var/log/auth.log
 ###########################################
 
 #### Set up Vault Database backend ####

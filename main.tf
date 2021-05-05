@@ -95,7 +95,6 @@ resource "aws_launch_template" "vault_instance" {
   user_data = base64encode(templatefile("${path.module}/templates/vault-servers.tpl", {
     vault_secrets_id     = aws_secretsmanager_secret.vault-secrets.arn
     aws_region           = var.aws_region
-    vault_dns            = aws_lb.alb.dns_name
     kms_key              = aws_kms_key.vault_unseal.id
     mysql_endpoint       = aws_instance.mysqlserver.private_ip
     db_user              = var.db_user
@@ -188,6 +187,14 @@ resource "aws_instance" "website" {
   }
 }
 
+data "aws_instances" "vault-servers" {
+  instance_tags = {
+    Name = "Demo-HA-Vault-vault-server"
+  }
+  instance_state_names = ["running"]
+}
+
+
 data "template_file" "website" {
   template = file("${path.module}/templates/petclinic-app.tpl")
 
@@ -195,8 +202,9 @@ data "template_file" "website" {
     aws_region        = var.aws_region
     web_log_group     = aws_cloudwatch_log_group.web_log_group.name
     web_log_stream    = aws_cloudwatch_log_stream.web_log_stream.name
-    vault_server_addr = aws_lb.alb.dns_name
+    vault_server_addr = data.aws_instances.vault-servers.private_ips[0]
     mysql_endpoint    = aws_instance.mysqlserver.private_ip
+    datadog_api       = var.datadog_api_key
     db_name           = var.db_name
     db_user           = var.db_user
     db_password       = var.db_password
