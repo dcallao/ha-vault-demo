@@ -97,9 +97,10 @@ seal "awskms" {
 }
 
 telemetry {
-  prometheus_retention_time = "24h"
-  disable_hostname = true
+   dogstatsd_addr = "localhost:8125"
+   dogtstasd_tags = ["app:vault-server"]
 }
+
 api_addr = "http://127.0.0.1:8200"
 cluster_addr = "http://127.0.0.1:8201"
 ui=true
